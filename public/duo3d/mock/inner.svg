@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1423" height="1000" viewBox="0 0 1423 1000" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif">
+  <rect width="1423" height="1000" fill="#fbfbfd"/>
+  <rect x="0" y="0" width="1423" height="96" fill="#ffffff"/>
+  <line x1="0" y1="96" x2="1423" y2="96" stroke="#ececf1" stroke-width="2"/>
+  <rect x="56" y="28" width="40" height="40" rx="11" fill="#6d5efc"/>
+  <text x="112" y="57" font-size="26" font-weight="700" fill="#111114">Duo Preview</text>
+  <text x="112" y="57" font-size="1" fill="none">.</text>
+  <circle cx="1150" cy="48" r="5" fill="#c9c9d2"/>
+  <circle cx="1190" cy="48" r="5" fill="#c9c9d2"/>
+  <circle cx="1230" cy="48" r="5" fill="#c9c9d2"/>
+  <rect x="1266" y="30" width="104" height="36" rx="18" fill="#6d5efc"/>
+  <text x="1318" y="54" font-size="15" font-weight="600" fill="#ffffff" text-anchor="middle">Open</text>
+
+  <text x="56" y="212" font-size="70" font-weight="800" fill="#111114" letter-spacing="-2">Your site, in the fold.</text>
+  <text x="56" y="272" font-size="30" fill="#6b6b76">See how your layout adapts across the 7.6&#8243; inner display.</text>
+
+  <rect x="56" y="340" width="415" height="330" rx="26" fill="#ffffff" stroke="#ececf1" stroke-width="2"/>
+  <rect x="88" y="372" width="351" height="168" rx="16" fill="#eef0ff"/>
+  <rect x="88" y="562" width="220" height="16" rx="8" fill="#d7d7df"/>
+  <rect x="88" y="596" width="300" height="14" rx="7" fill="#e6e6ec"/>
+  <rect x="88" y="622" width="250" height="14" rx="7" fill="#e6e6ec"/>
+
+  <rect x="503" y="340" width="415" height="330" rx="26" fill="#ffffff" stroke="#ececf1" stroke-width="2"/>
+  <rect x="535" y="372" width="351" height="168" rx="16" fill="#e9fbf1"/>
+  <rect x="535" y="562" width="200" height="16" rx="8" fill="#d7d7df"/>
+  <rect x="535" y="596" width="320" height="14" rx="7" fill="#e6e6ec"/>
+  <rect x="535" y="622" width="230" height="14" rx="7" fill="#e6e6ec"/>
+
+  <rect x="950" y="340" width="415" height="330" rx="26" fill="#ffffff" stroke="#ececf1" stroke-width="2"/>
+  <rect x="982" y="372" width="351" height="168" rx="16" fill="#fff2e8"/>
+  <rect x="982" y="562" width="240" height="16" rx="8" fill="#d7d7df"/>
+  <rect x="982" y="596" width="300" height="14" rx="7" fill="#e6e6ec"/>
+  <rect x="982" y="622" width="270" height="14" rx="7" fill="#e6e6ec"/>
+
+  <rect x="56" y="730" width="1309" height="200" rx="26" fill="#111114"/>
+  <text x="96" y="812" font-size="34" font-weight="700" fill="#ffffff">Built for both displays</text>
+  <text x="96" y="860" font-size="22" fill="#a9a9b6">A wide two-column layout when open, a single column when closed.</text>
+</svg>

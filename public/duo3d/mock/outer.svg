@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="688" height="1000" viewBox="0 0 688 1000" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif">
+  <rect width="688" height="1000" fill="#fbfbfd"/>
+  <rect x="0" y="0" width="688" height="92" fill="#ffffff"/>
+  <line x1="0" y1="92" x2="688" y2="92" stroke="#ececf1" stroke-width="2"/>
+  <rect x="40" y="30" width="34" height="34" rx="10" fill="#6d5efc"/>
+  <text x="88" y="55" font-size="24" font-weight="700" fill="#111114">Duo</text>
+  <rect x="596" y="34" width="52" height="26" rx="13" fill="#111114"/>
+
+  <text x="40" y="212" font-size="58" font-weight="800" fill="#111114" letter-spacing="-1.5">Your site,</text>
+  <text x="40" y="274" font-size="58" font-weight="800" fill="#6d5efc" letter-spacing="-1.5">in the fold.</text>
+  <text x="40" y="326" font-size="24" fill="#6b6b76">The 5.4&#8243; cover layout.</text>
+
+  <rect x="40" y="380" width="608" height="250" rx="24" fill="#ffffff" stroke="#ececf1" stroke-width="2"/>
+  <rect x="68" y="408" width="552" height="126" rx="16" fill="#eef0ff"/>
+  <rect x="68" y="558" width="240" height="16" rx="8" fill="#d7d7df"/>
+  <rect x="68" y="590" width="480" height="14" rx="7" fill="#e6e6ec"/>
+
+  <rect x="40" y="658" width="608" height="250" rx="24" fill="#ffffff" stroke="#ececf1" stroke-width="2"/>
+  <rect x="68" y="686" width="552" height="126" rx="16" fill="#e9fbf1"/>
+  <rect x="68" y="836" width="260" height="16" rx="8" fill="#d7d7df"/>
+  <rect x="68" y="868" width="430" height="14" rx="7" fill="#e6e6ec"/>
+</svg>

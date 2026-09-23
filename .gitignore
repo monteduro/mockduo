@@ -1,0 +1,11 @@
+.env*
+!.env.example
+.DS_Store
+*.pem
+*.key
+*.p8
+*.p12
+server/cache/
+node_modules/
+dist/
+tsconfig.tsbuildinfo
