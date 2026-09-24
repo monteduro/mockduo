@@ -5,6 +5,7 @@ type Props = {
   open: boolean
   angleOverride?: number | null
   viewInsets: { top: number; bottom: number }
+  onLoaded?: (url: string) => void
 }
 
 const INNER = { w: 951, h: 588 }
@@ -22,7 +23,7 @@ async function cachedShot(url: string, width: number, height: number): Promise<s
   return `/shot.png?url=${encodeURIComponent(url)}&w=${width}&h=${height}`
 }
 
-export default function Duo3D({ url, open, angleOverride = null, viewInsets }: Props) {
+export default function Duo3D({ url, open, angleOverride = null, viewInsets, onLoaded }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
   const firstFold = useRef(true)
   const requestId = useRef(0)
@@ -53,7 +54,8 @@ export default function Duo3D({ url, open, angleOverride = null, viewInsets }: P
   }, [])
 
   useEffect(() => {
-    if (!ready) return
+    // An empty url means the site is still being chosen; keep the loading state.
+    if (!ready || !url) return
     const currentRequest = ++requestId.current
     setTextures([])
     setShotError(false)
@@ -74,7 +76,10 @@ export default function Duo3D({ url, open, angleOverride = null, viewInsets }: P
   }, [ready, url])
 
   useEffect(() => {
-    if (loading && textures.length === 2) setLoading(false)
+    if (loading && textures.length === 2) {
+      setLoading(false)
+      onLoaded?.(url)
+    }
   }, [loading, textures])
 
   useEffect(() => {
@@ -106,7 +111,7 @@ export default function Duo3D({ url, open, angleOverride = null, viewInsets }: P
             frame.current?.contentWindow?.postMessage({ type: 'status' }, window.location.origin)
           }}
         />
-        {(!ready || loading) && !error && !shotError && (
+        {(!ready || loading || !url) && !error && !shotError && (
           <div className="duo3d-overlay" role="status">
             <span className="spinner" />
             <span>{ready ? 'Preparing both displays…' : 'Loading the Duo…'}</span>

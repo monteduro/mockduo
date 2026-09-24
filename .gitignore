@@ -6,6 +6,7 @@
 *.p8
 *.p12
 server/cache/
+server/data/
 node_modules/
 dist/
 tsconfig.tsbuildinfo

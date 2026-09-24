@@ -21,6 +21,24 @@ The visitor's browser draws the ScreenshotOne images and Safari controls into on
 
 ScreenshotOne requests set `block_cookie_banners=true` and `block_ads=true`.
 
+## Gallery
+
+Sites entered in the form are logged in a SQLite database (`server/data/sites.db`,
+or `SITES_DB_PATH`) once both displays have loaded, and listed in the **Gallery**
+modal. Sites opened from a link or from the gallery are not logged. The server
+accepts `POST /api/sites` only for URLs whose screenshot is already cached, with
+10 submissions per minute per client IP. `GET /api/sites?sort=recent|popular`
+returns the list. The database uses Node's built-in `node:sqlite` (Node 22.13+).
+
+The home page shows the most recently submitted site. **Claim it** opens the
+form; submitting a site makes it the new home page. Resubmitting the site that is
+already on the home page is rejected (HTTP 409). Each site also has a path URL:
+`/example.com` or `/example.com/page` opens that site. To import existing sites, one URL or domain per line:
+
+```bash
+node scripts/import-sites.mjs sites.txt
+```
+
 ## Screenshot endpoint limits
 
 `/shot.png` accepts only public HTTP(S) destinations. The server allows 30 screenshot

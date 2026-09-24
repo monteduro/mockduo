@@ -16,7 +16,7 @@ tipo **Static HTML** collegato al repository e al branch di rilascio.
 - Mantieni il deploy zero downtime proposto da Forge.
 - Collega il DNS al server e abilita il certificato TLS dal pannello Domains.
 
-Il build richiede Node.js 22 o 24 LTS. Non avviare Vite come server di produzione.
+Il build richiede Node.js 22.13+ o 24 LTS (la galleria usa `node:sqlite`). Non avviare Vite come server di produzione.
 
 ## 2. Deploy script
 
@@ -40,12 +40,17 @@ del codice.
 
 ## 3. Variabili
 
-Non serve installare Chromium o altri browser sul VPS. Prepara solo una
-directory scrivibile per la cache, se vuoi conservarla fuori dalle release:
+Non serve installare Chromium o altri browser sul VPS. Prepara le directory
+persistenti accanto a `current/`, `releases/` e `shared/`, come su
+killmyidea.stemonte.io, così i deploy zero downtime non le toccano:
 
 ```bash
-mkdir -p /home/forge/mockduo.stemonte.io/shot-cache
+mkdir -p /home/forge/mockduo.stemonte.io/shot-cache /home/forge/mockduo.stemonte.io/data
 ```
+
+`data/` contiene il database SQLite della galleria (`sites.db` più i file
+`-wal` e `-shm`). Per un backup coerente usa
+`sqlite3 data/sites.db ".backup data/sites-backup.db"` invece di copiare solo il file.
 
 Nel file `.env` del sito su Forge imposta:
 
@@ -53,7 +58,12 @@ Nel file `.env` del sito su Forge imposta:
 SCREENSHOTONE_ACCESS_KEY=INSERISCI_LA_CHIAVE
 SHOT_CACHE_DIR=/home/forge/mockduo.stemonte.io/shot-cache
 SHOT_TRUST_PROXY=1
+SITES_DB_PATH=/home/forge/mockduo.stemonte.io/data/sites.db
 ```
+
+`SITES_DB_PATH` tiene il database della galleria in `data/`, fuori dalle
+release. Senza questa variabile il database finirebbe in
+`current/server/data/` e andrebbe perso al deploy successivo.
 
 `SCREENSHOTONE_ACCESS_KEY` è obbligatoria per nuove catture. Non pubblicare
 la chiave nel repository.
@@ -89,7 +99,21 @@ location = /shot.png {
 location = /health {
     proxy_pass http://127.0.0.1:8787;
 }
+
+location = /api/sites {
+    proxy_pass http://127.0.0.1:8787;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+
+location / {
+    try_files $uri $uri/ /index.html;
+}
 ```
+
+Il `try_files` serve per gli URL tipo `/example.com`: servono `index.html` e
+l'app legge il sito dal path. Se Forge ha già un blocco `location /`, sostituisci
+la sua riga `try_files` invece di aggiungerne un secondo.
 
 La root del sito deve puntare a `dist/`, non a `public/` o alla root del repo.
 

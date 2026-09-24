@@ -6,11 +6,13 @@ import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { publicUrl, resolvePublicAddress } from './safe-proxy.mjs'
 import { HttpError, rateLimiter, workQueue } from './limits.mjs'
+import { openSitesDb } from './sites-db.mjs'
 
 const PORT = Number(process.env.SHOT_PORT || 8787)
 const MAX_IMAGE_BYTES = 32 * 1024 * 1024
 const MAX_CACHE_BYTES = 512 * 1024 * 1024
 const CACHE_DIR = process.env.SHOT_CACHE_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), 'cache')
+const SITES_DB = process.env.SITES_DB_PATH || path.join(path.dirname(fileURLToPath(import.meta.url)), 'data', 'sites.db')
 const SCREENSHOTONE_KEY = process.env.SCREENSHOTONE_ACCESS_KEY || process.env.SCREENSHOTONE_API_KEY
 const SCREENSHOTONE_URL = process.env.SCREENSHOTONE_API_URL || 'https://api.screenshotone.com/take'
 const PNG_SIGNATURE = Buffer.from('89504e470d0a1a0a', 'hex')
@@ -24,6 +26,8 @@ const queue = workQueue(10)
 const requestsPerIp = rateLimiter(30)
 const capturesPerIp = rateLimiter(10)
 const capturesGlobal = rateLimiter(60)
+const submitsPerIp = rateLimiter(10)
+const sites = openSitesDb(SITES_DB)
 const inFlight = new Map()
 let lastCachePrune = 0
 
@@ -134,6 +138,55 @@ async function cachedCapture(key, file, legacyFile, clientIp, render) {
   return pending
 }
 
+function shotFiles(siteUrl, width, height) {
+  return ['screenshotone-v1', 'site-v5'].map((version) => {
+    const key = createHash('sha256').update(JSON.stringify([version, siteUrl.href, width, height])).digest('hex')
+    return { key, file: path.join(CACHE_DIR, `${key}.png`) }
+  })
+}
+
+async function readJson(req, maxBytes = 4096) {
+  let body = ''
+  for await (const chunk of req) {
+    body += chunk
+    if (body.length > maxBytes) throw new HttpError(413, 'body too large')
+  }
+  try {
+    return JSON.parse(body)
+  } catch {
+    throw new HttpError(400, 'invalid json')
+  }
+}
+
+function sendJson(res, status, body, headers = {}) {
+  res.writeHead(status, { 'content-type': 'application/json', ...headers })
+  res.end(JSON.stringify(body))
+}
+
+// Only sites whose screenshot is already cached are recorded, so the list
+// contains pages that were captured successfully rather than arbitrary input.
+async function handleSites(req, res, url) {
+  if (req.method === 'GET') {
+    const sort = ['popular', 'latest'].includes(url.searchParams.get('sort')) ? url.searchParams.get('sort') : 'recent'
+    const limit = Math.min(200, Math.max(0, Number.parseInt(url.searchParams.get('limit') ?? '200', 10) || 0))
+    sendJson(res, 200, { total: sites.count(), sites: limit ? sites.list(sort, limit) : [] }, { 'cache-control': 'no-store' })
+    return
+  }
+  if (req.method !== 'POST') {
+    res.writeHead(405, { allow: 'GET, POST' })
+    res.end('method not allowed')
+    return
+  }
+  if (!submitsPerIp(clientAddress(req))) throw new HttpError(429, 'submit rate exceeded')
+  const { url: target } = await readJson(req)
+  const siteUrl = publicUrl(target)
+  const cached = await Promise.all(shotFiles(siteUrl, 951, 588).map(({ file }) => readCachedPng(file)))
+  if (!cached.some(Boolean)) throw new HttpError(404, 'site not captured')
+  if (sites.list('latest', 1)[0]?.url === siteUrl.href) throw new HttpError(409, 'already the homepage')
+  sites.record(siteUrl)
+  sendJson(res, 201, { ok: true })
+}
+
 function dimension(value, fallback) {
   if (value == null) return fallback
   const number = Number(value)
@@ -164,6 +217,17 @@ const server = http.createServer(async (req, res) => {
     res.end('ok')
     return
   }
+  if (url.pathname === '/api/sites') {
+    try {
+      await handleSites(req, res, url)
+    } catch (error) {
+      const status = error instanceof HttpError ? error.status : error.message === 'invalid site url' ? 400 : 500
+      if (status === 500) console.error('sites request failed', error)
+      sendJson(res, status, { error: status === 500 ? 'internal error' : error.message },
+        status === 429 ? { 'retry-after': '60' } : {})
+    }
+    return
+  }
   if (url.pathname !== '/shot' && url.pathname !== '/shot.png') {
     res.writeHead(404)
     res.end('not found')
@@ -187,10 +251,7 @@ const server = http.createServer(async (req, res) => {
     await resolvePublicAddress(siteUrl.hostname)
     const width = dimension(url.searchParams.get('w'), 1024)
     const height = dimension(url.searchParams.get('h'), 768)
-    const key = createHash('sha256').update(JSON.stringify(['screenshotone-v1', siteUrl.href, width, height])).digest('hex')
-    const file = path.join(CACHE_DIR, `${key}.png`)
-    const legacyKey = createHash('sha256').update(JSON.stringify(['site-v5', siteUrl.href, width, height])).digest('hex')
-    const legacyFile = path.join(CACHE_DIR, `${legacyKey}.png`)
+    const [{ key, file }, { file: legacyFile }] = shotFiles(siteUrl, width, height)
     const png = await cachedCapture(key, file, legacyFile, clientIp, () => captureWithScreenshotOne(siteUrl.href, width, height))
     res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'private, max-age=86400' })
     res.end(png)
