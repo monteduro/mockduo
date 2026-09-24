@@ -18,7 +18,9 @@ async function cachedShot(url: string, width: number, height: number): Promise<s
     const digest = await crypto.subtle.digest('SHA-256', input)
     const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
     const path = `/shot-cache/${hash}.png`
-    if ((await fetch(path, { method: 'HEAD' })).ok) return path
+    // The SPA fallback answers unknown paths with index.html, so require an image.
+    const response = await fetch(path, { method: 'HEAD' })
+    if (response.ok && response.headers.get('content-type')?.startsWith('image/')) return path
   }
   return `/shot.png?url=${encodeURIComponent(url)}&w=${width}&h=${height}`
 }

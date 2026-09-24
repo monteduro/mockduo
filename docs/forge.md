@@ -106,10 +106,17 @@ location = /api/sites {
     proxy_set_header X-Real-IP $remote_addr;
 }
 
+location /shot-cache/ {
+    try_files $uri =404;
+}
+
 location / {
     try_files $uri $uri/ /index.html;
 }
 ```
+
+`/shot-cache/` deve rispondere 404 per le immagini mancanti: con il fallback su
+`index.html` il frontend scambierebbe la pagina per uno screenshot in cache.
 
 Il `try_files` serve per gli URL tipo `/example.com`: servono `index.html` e
 l'app legge il sito dal path. Se Forge ha già un blocco `location /`, sostituisci
