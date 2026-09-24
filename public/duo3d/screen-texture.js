@@ -81,7 +81,15 @@ function centeredText(ctx, text, x, y, size, color, maxWidth, weight = 500) {
   ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x, y, maxWidth);
+  ctx.fillText(fitText(ctx, text, maxWidth), x, y);
+}
+
+// Long hosts are cut with an ellipsis instead of being squeezed horizontally.
+function fitText(ctx, text, maxWidth) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let end = text.length;
+  while (end > 1 && ctx.measureText(`${text.slice(0, end)}…`).width > maxWidth) end--;
+  return `${text.slice(0, end)}…`;
 }
 
 function drawTime(ctx, x, y, size, theme, align, weight) {
