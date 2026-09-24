@@ -128,7 +128,7 @@ export default function SitesModal({ open, current, onClose, onSelect }: Props) 
                       <SiteIcon host={site.host} />
                       <div className="sites-list__text">
                         <strong title={site.url}>{site.host}<span>{path}</span></strong>
-                        <small>{site.submits} {site.submits === 1 ? 'preview' : 'previews'} · {ago(site.last_seen)}</small>
+                        <small>{site.submits} {site.submits === 1 ? 'preview' : 'previews'} · added {ago(site.first_seen)}</small>
                       </div>
                       <div className="sites-list__actions">
                         <button type="button" className="chip chip--dark" onClick={() => onSelect(site.url)}>Preview</button>
