@@ -30,6 +30,7 @@ export function openSitesDb(file) {
       last_seen = MAX(last_seen, excluded.last_seen)
   `)
   const total = db.prepare('SELECT COUNT(*) AS total FROM sites')
+  const find = db.prepare('SELECT url, host, submits, first_seen, last_seen FROM sites WHERE url = ?')
   const columns = 'SELECT url, host, submits, first_seen, last_seen FROM sites'
   const lists = {
     recent: db.prepare(`${columns} ORDER BY first_seen DESC LIMIT ?`),
@@ -42,6 +43,9 @@ export function openSitesDb(file) {
     },
     merge(url, submits, firstSeen, lastSeen) {
       merge.run(url.href, url.hostname.replace(/^www\./, ''), submits, firstSeen, lastSeen)
+    },
+    find(url) {
+      return find.get(url.href) || null
     },
     count() {
       return total.get().total

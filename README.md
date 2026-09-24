@@ -32,8 +32,11 @@ returns the list. The database uses Node's built-in `node:sqlite` (Node 22.13+).
 
 The home page shows the most recently submitted site. **Claim it** opens the
 form; submitting a site makes it the new home page. Resubmitting the site that is
-already on the home page is rejected (HTTP 409). Each site also has a path URL:
-`/example.com` or `/example.com/page` opens that site. To import existing sites, one URL or domain per line:
+already on the home page is rejected (HTTP 409). Each saved site also has a path
+URL: `/example.com` or `/example.com/page` opens it. Paths for sites that are not
+in the database show a 404 view. Only the claim form can start a new capture: the
+home page, gallery and path URLs request `/shot.png?...&cached=1`, which serves
+cached screenshots only and never calls ScreenshotOne. To import existing sites, one URL or domain per line:
 
 ```bash
 node scripts/import-sites.mjs sites.txt

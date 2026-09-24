@@ -121,6 +121,12 @@ button { cursor: pointer; }
   pointer-events: none;
   background: #ffffffb8;
 }
+.duo3d-overlay--notice { background: #ffffffd9; pointer-events: auto; }
+.not-found { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #1d1d1f; }
+.not-found strong { font-size: 44px; font-weight: 800; letter-spacing: -.04em; }
+.not-found p { margin: 0; color: #6e6e73; font-size: 15px; }
+.not-found p b { color: #1d1d1f; }
+.not-found__actions { display: flex; gap: 8px; margin-top: 6px; }
 .duo3d-overlay--error { color: #ad222b; background: #ffffffd9; }
 .spinner {
   width: 25px;

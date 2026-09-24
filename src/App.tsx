@@ -45,6 +45,15 @@ async function homepageSite(): Promise<string> {
   }
 }
 
+// Path links only open sites that were already submitted, so they never trigger captures.
+async function isSavedSite(url: string): Promise<boolean> {
+  try {
+    return (await fetch(`/api/sites?url=${encodeURIComponent(url)}`)).ok
+  } catch {
+    return false
+  }
+}
+
 function sitePath(url: string): string {
   const parsed = new URL(url)
   if (parsed.protocol !== 'https:' || parsed.search || parsed.hash || parsed.username) {
@@ -72,9 +81,9 @@ function morph(update: () => void) {
   document.startViewTransition(() => flushSync(update))
 }
 
-function CurrentSite({ url }: { url: string }) {
+function CurrentSite({ url, placeholder }: { url: string; placeholder: string }) {
   const [iconHidden, setIconHidden] = useState(false)
-  if (!url) return <span className="url-display__text url-display__text--muted">Loading…</span>
+  if (!url) return <span className="url-display__text url-display__text--muted">{placeholder}</span>
   const parsed = new URL(url)
   const host = parsed.hostname.replace(/^www\./, '')
   const path = parsed.pathname === '/' ? '' : parsed.pathname
@@ -119,14 +128,14 @@ function GalleryIcon() {
   )
 }
 
-const INITIAL_URL = siteFromLocation()
-
 export default function App() {
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState(false)
   const [claimError, setClaimError] = useState('')
   const homepage = useRef('')
-  const [url, setUrl] = useState(INITIAL_URL)
+  const [url, setUrl] = useState('')
+  const [notFound, setNotFound] = useState('')
+  const [captureUrl, setCaptureUrl] = useState('')
   const navigation = useRef(0)
   const [open, setOpen] = useState(params.get('open') === '1')
   const [viewInsets, setViewInsets] = useState({ top: 0, bottom: 0 })
@@ -166,12 +175,13 @@ export default function App() {
 
   function display(next: string) {
     navigation.current++
+    setNotFound('')
     setUrl(next)
   }
 
-  function startEditing() {
+  function startEditing(prefill = '') {
     morph(() => {
-      setDraft('')
+      setDraft(prefill)
       setClaimError('')
       setEditing(true)
     })
@@ -188,13 +198,25 @@ export default function App() {
     })
   }
 
-  useEffect(() => {
-    if (!INITIAL_URL) showLatest()
-    const onPopState = () => {
-      const next = siteFromLocation()
-      if (next) display(next)
-      else showLatest()
+  function openLocation() {
+    const next = siteFromLocation()
+    if (!next) {
+      showLatest()
+      return
     }
+    const current = ++navigation.current
+    setUrl('')
+    setNotFound('')
+    isSavedSite(next).then((saved) => {
+      if (current !== navigation.current) return
+      if (saved) display(next)
+      else setNotFound(next)
+    })
+  }
+
+  useEffect(() => {
+    openLocation()
+    const onPopState = () => openLocation()
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
@@ -232,6 +254,7 @@ export default function App() {
     if (next === loadedUrl.current) claim(next)
     else pendingLog.current = next
     morph(() => {
+      setCaptureUrl(next)
       setEditing(false)
       show(next)
     })
@@ -299,7 +322,7 @@ export default function App() {
           </form>
         ) : (
           <div className="url-form url-display">
-            <CurrentSite key={url} url={url} />
+            <CurrentSite key={url} url={url} placeholder={notFound ? 'Not found' : 'Loading…'} />
             {url && (
               <a className="btn btn--light" href={withRef(url)} target="_blank" rel="ugc nofollow noopener">
                 Visit ↗
@@ -308,7 +331,7 @@ export default function App() {
           </div>
         )}
         {!editing && (
-          <button type="button" className="gallery-button cta-button" onClick={startEditing} data-fast-goal="claim_homepage_clicked">
+          <button type="button" className="gallery-button cta-button" onClick={() => startEditing()} data-fast-goal="claim_homepage_clicked">
             <CrownIcon />
             Claim it
           </button>
@@ -327,7 +350,24 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        <Duo3D url={url} open={open} angleOverride={ANGLE_OVERRIDE} viewInsets={viewInsets} onLoaded={onLoaded} />
+        <Duo3D
+          url={url}
+          open={open}
+          angleOverride={ANGLE_OVERRIDE}
+          viewInsets={viewInsets}
+          onLoaded={onLoaded}
+          allowCapture={url !== '' && url === captureUrl}
+          notice={notFound && (
+            <div className="not-found">
+              <strong>404</strong>
+              <p><b>{new URL(notFound).hostname.replace(/^www\./, '')}</b> isn't on MockDuo yet.</p>
+              <div className="not-found__actions">
+                <button type="button" className="btn btn--primary" onClick={() => startEditing(new URL(notFound).hostname)}>Claim it</button>
+                <button type="button" className="btn btn--light" onClick={goHome}>Go home</button>
+              </div>
+            </div>
+          )}
+        />
       </main>
 
       <div className="app-bottom" ref={bottomRef}>

@@ -112,9 +112,11 @@ async function pruneCache() {
   }
 }
 
+// Without render, only cached screenshots are served and ScreenshotOne is never called.
 async function cachedCapture(key, file, legacyFile, clientIp, render) {
   const cached = await readCachedPng(file) || await readCachedPng(legacyFile)
   if (cached) return cached
+  if (!render) throw new HttpError(404, 'screenshot not cached')
   if (inFlight.has(key)) return inFlight.get(key)
   if (!capturesPerIp(clientIp) || !capturesGlobal('all')) throw new HttpError(429, 'capture rate exceeded')
   const pending = queue(async () => {
@@ -166,6 +168,11 @@ function sendJson(res, status, body, headers = {}) {
 // Only sites whose screenshot is already cached are recorded, so the list
 // contains pages that were captured successfully rather than arbitrary input.
 async function handleSites(req, res, url) {
+  if (req.method === 'GET' && url.searchParams.has('url')) {
+    const site = sites.find(publicUrl(url.searchParams.get('url')))
+    sendJson(res, site ? 200 : 404, site ? { site } : { error: 'site not found' }, { 'cache-control': 'no-store' })
+    return
+  }
   if (req.method === 'GET') {
     const sort = ['popular', 'latest'].includes(url.searchParams.get('sort')) ? url.searchParams.get('sort') : 'recent'
     const limit = Math.min(200, Math.max(0, Number.parseInt(url.searchParams.get('limit') ?? '200', 10) || 0))
@@ -252,7 +259,9 @@ const server = http.createServer(async (req, res) => {
     const width = dimension(url.searchParams.get('w'), 1024)
     const height = dimension(url.searchParams.get('h'), 768)
     const [{ key, file }, { file: legacyFile }] = shotFiles(siteUrl, width, height)
-    const png = await cachedCapture(key, file, legacyFile, clientIp, () => captureWithScreenshotOne(siteUrl.href, width, height))
+    const cacheOnly = url.searchParams.get('cached') === '1'
+    const png = await cachedCapture(key, file, legacyFile, clientIp,
+      cacheOnly ? null : () => captureWithScreenshotOne(siteUrl.href, width, height))
     res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'private, max-age=86400' })
     res.end(png)
   } catch (error) {

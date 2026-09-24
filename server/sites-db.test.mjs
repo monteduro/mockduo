@@ -11,6 +11,8 @@ test('records sites and counts repeated submits', () => {
   assert.equal(db.list('popular')[0].url, 'https://www.example.com/')
   assert.equal(db.list('recent', 1).length, 1)
   assert.equal(db.count(), 2)
+  assert.equal(db.find(new URL('https://other.org/page')).submits, 1)
+  assert.equal(db.find(new URL('https://missing.org/')), null)
   assert.equal(db.list('latest', 1)[0].url, 'https://www.example.com/')
   db.close()
 })

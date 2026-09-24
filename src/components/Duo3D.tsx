@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 type Props = {
   url: string
@@ -6,12 +6,15 @@ type Props = {
   angleOverride?: number | null
   viewInsets: { top: number; bottom: number }
   onLoaded?: (url: string) => void
+  // Only an explicit submit may start a new ScreenshotOne capture.
+  allowCapture?: boolean
+  notice?: ReactNode
 }
 
 const INNER = { w: 951, h: 588 }
 const OUTER = { w: 382, h: 678 }
 
-async function cachedShot(url: string, width: number, height: number): Promise<string> {
+async function cachedShot(url: string, width: number, height: number, allowCapture: boolean): Promise<string> {
   const siteUrl = new URL(url).href
   for (const version of ['screenshotone-v1', 'site-v5']) {
     const input = new TextEncoder().encode(JSON.stringify([version, siteUrl, width, height]))
@@ -22,10 +25,10 @@ async function cachedShot(url: string, width: number, height: number): Promise<s
     const response = await fetch(path, { method: 'HEAD' })
     if (response.ok && response.headers.get('content-type')?.startsWith('image/')) return path
   }
-  return `/shot.png?url=${encodeURIComponent(url)}&w=${width}&h=${height}`
+  return `/shot.png?url=${encodeURIComponent(url)}&w=${width}&h=${height}${allowCapture ? '' : '&cached=1'}`
 }
 
-export default function Duo3D({ url, open, angleOverride = null, viewInsets, onLoaded }: Props) {
+export default function Duo3D({ url, open, angleOverride = null, viewInsets, onLoaded, allowCapture = false, notice }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
   const firstFold = useRef(true)
   const requestId = useRef(0)
@@ -63,8 +66,8 @@ export default function Duo3D({ url, open, angleOverride = null, viewInsets, onL
     setShotError(false)
     setLoading(true)
     Promise.all([
-      cachedShot(url, INNER.w, INNER.h),
-      cachedShot(url, OUTER.w, OUTER.h),
+      cachedShot(url, INNER.w, INNER.h, allowCapture),
+      cachedShot(url, OUTER.w, OUTER.h, allowCapture),
     ]).then(([inner, outer]) => {
       if (currentRequest === requestId.current) {
         post({ type: 'screens', requestId: currentRequest, siteUrl: url, inner, outer })
@@ -75,7 +78,7 @@ export default function Duo3D({ url, open, angleOverride = null, viewInsets, onL
         setLoading(false)
       }
     })
-  }, [ready, url])
+  }, [ready, url, allowCapture])
 
   useEffect(() => {
     if (loading && textures.length === 2) {
@@ -113,7 +116,8 @@ export default function Duo3D({ url, open, angleOverride = null, viewInsets, onL
             frame.current?.contentWindow?.postMessage({ type: 'status' }, window.location.origin)
           }}
         />
-        {(!ready || loading || !url) && !error && !shotError && (
+        {notice && !error && <div className="duo3d-overlay duo3d-overlay--notice">{notice}</div>}
+        {(!ready || loading || !url) && !notice && !error && !shotError && (
           <div className="duo3d-overlay" role="status">
             <span className="spinner" />
             <span>{ready ? 'Preparing both displays…' : 'Loading the Duo…'}</span>
